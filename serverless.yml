@@ -36,12 +36,6 @@ functions:
           path: prepare-new-file-url
           method: get
           cors: true
-  confirm-upload:
-    handler: confirm-upload.main
-    events: 
-      - s3:
-          bucket: ${self:provider.environment.TEMP_FILES_BUCKET}
-          event: s3:ObjectCreated:*
 
 # you can add CloudFormation resource templates here
 #resources:
