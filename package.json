@@ -4,6 +4,7 @@
   "description": "",
   "main": "handler.js",
   "dependencies": {
+    "serverless-apigw-binary": "^0.4.4",
     "uuid": "^3.1.0"
   },
   "devDependencies": {},

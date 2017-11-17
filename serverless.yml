@@ -1,5 +1,13 @@
 service: pervichka-aws
 
+plugins:
+  - serverless-apigw-binary
+
+custom:
+  apigwBinary:
+    types:
+      - '*/*'
+
 provider:
   name: aws
   runtime: nodejs6.10
@@ -34,6 +42,13 @@ functions:
     events: 
       - http:  
           path: prepare-new-file-url
+          method: get
+          cors: true
+  get-file:
+    handler: get-file.main
+    events: 
+      - http:  
+          path: get-file
           method: get
           cors: true
 
