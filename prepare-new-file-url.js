@@ -16,7 +16,12 @@ module.exports.main = (event, context, callback) => {
         "Access-Control-Allow-Origin" : "*", // Required for CORS support to work
         "Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
       },
-      body: JSON.stringify({path: path, filename: filename, result: result, error: error})
+      body: JSON.stringify({
+        ok: error ? false : true,
+        path: path, 
+        filename: filename, 
+        result: result, 
+        errorText: error.message})
     };
     callback(null, response);
   }
@@ -33,7 +38,9 @@ module.exports.main = (event, context, callback) => {
     var item = {
         id: filename,
         path: result,
-        added: now.toISOString()
+        added: now.toISOString(),
+        type: type,
+        owner: code
     };
 
     var params = {
@@ -45,7 +52,24 @@ module.exports.main = (event, context, callback) => {
 
   }
 
+  var type;
+  if (event.queryStringParameters !== null && event.queryStringParameters !== undefined) { 
+    if (event.queryStringParameters.type !== undefined && event.queryStringParameters.type !== null && event.queryStringParameters.type !== "") { 
+      type = event.queryStringParameters.type; 
+    } 
+  }
 
+  var code;
+  if (event.queryStringParameters !== null && event.queryStringParameters !== undefined) { 
+    if (event.queryStringParameters.code !== undefined && event.queryStringParameters.code !== null && event.queryStringParameters.code !== "") { 
+      code = event.queryStringParameters.code; 
+    } 
+  }
+
+  if (type === undefined || code === undefined) {
+    response(new Error('Required params missing'));
+    return;
+  }
 
   var s3 = new AWS.S3();
   
