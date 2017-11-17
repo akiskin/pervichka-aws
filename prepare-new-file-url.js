@@ -21,7 +21,7 @@ module.exports.main = (event, context, callback) => {
         path: path, 
         filename: filename, 
         result: result, 
-        errorText: error.message})
+        errorText: error ? error.message : ''})
     };
     callback(null, response);
   }
