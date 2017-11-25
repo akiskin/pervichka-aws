@@ -40,7 +40,7 @@ module.exports.main = (event, context, callback) => {
         path: result,
         added: now.toISOString(),
         type: type,
-        owner: code
+        customer: code
     };
 
     var params = {
