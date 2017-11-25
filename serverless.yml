@@ -15,6 +15,7 @@ provider:
     TEMP_FILES_TABLE: "temp-urls-${self:service}-${opt:stage, self:provider.stage}"
     TEMP_FILES_BUCKET: "temp-files-${self:service}-${opt:stage, self:provider.stage}"
     UPLOADED_FILES_TABLE: "uploaded-urls-${self:service}-${opt:stage, self:provider.stage}"
+    CUSTOMERS_TABLE: "${self:service}-${opt:stage, self:provider.stage}-customers"
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -51,18 +52,31 @@ functions:
           path: get-file
           method: get
           cors: true
+  get-file-url:
+    handler: get-file-url.main
+    events: 
+      - http:  
+          path: get-file-url
+          method: get
+          cors: true
+  get-my-files-list:
+    handler: get-my-files-list.main
+    events: 
+      - http:  
+          path: get-my-files-list
+          method: get
+          cors: true    
+  new-customer:
+    handler: new-customer.main
+    events: 
+      - http:  
+          path: new-customer
+          method: post
+          cors: true
 
-# you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
-#  Outputs:
-#     NewOutput:
-#       Description: "Description for the output"
-#       Value: "Some output value"
+
+
+
 resources:
   Resources:
     TempUserFilesBucket:
@@ -101,6 +115,36 @@ resources:
       DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
+          - AttributeName: "id"
+            AttributeType: "S"   
+          - AttributeName: "customer"
+            AttributeType: "S" 
+        KeySchema:
+          -
+            AttributeName: "id"
+            KeyType: "HASH"
+        GlobalSecondaryIndexes:
+          - IndexName: customer-index
+            KeySchema:
+              - AttributeName: customer
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: "NEW_AND_OLD_IMAGES"
+        TableName: ${self:provider.environment.UPLOADED_FILES_TABLE}
+
+    CustomersDynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
           -
             AttributeName: "id"
             AttributeType: "S"   
@@ -113,4 +157,4 @@ resources:
           WriteCapacityUnits: 1
         StreamSpecification:
           StreamViewType: "NEW_AND_OLD_IMAGES"
-        TableName: ${self:provider.environment.UPLOADED_FILES_TABLE}
+        TableName: ${self:provider.environment.CUSTOMERS_TABLE}
