@@ -1,12 +1,12 @@
 service: pervichka-aws
 
-plugins:
-  - serverless-apigw-binary
+#plugins:
+#  - serverless-apigw-binary
 
-custom:
-  apigwBinary:
-    types:
-      - '*/*'
+#custom:
+#  apigwBinary:
+#    types:
+#      - 'image/*'
 
 provider:
   name: aws
@@ -16,6 +16,8 @@ provider:
     TEMP_FILES_BUCKET: "temp-files-${self:service}-${opt:stage, self:provider.stage}"
     UPLOADED_FILES_TABLE: "uploaded-urls-${self:service}-${opt:stage, self:provider.stage}"
     CUSTOMERS_TABLE: "${self:service}-${opt:stage, self:provider.stage}-customers"
+    SES_REGION: "us-east-1" #SES is not available in all regions
+    EMAIL_FROM_ADDRESS: "support@pervichka.online"
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -28,6 +30,16 @@ provider:
       Action:
         - s3:*
       Resource: "arn:aws:s3:::${self:provider.environment.TEMP_FILES_BUCKET}/*"
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+  
+  
   stage: dev
   region: us-east-2
 
