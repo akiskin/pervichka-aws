@@ -19,7 +19,21 @@ module.exports.main = (event, context, callback) => {
     } 
   }
 
-  if (type === undefined || code === undefined) {
+  var docid;
+  if (event.queryStringParameters !== null && event.queryStringParameters !== undefined) { 
+    if (event.queryStringParameters.docid !== undefined && event.queryStringParameters.docid !== null && event.queryStringParameters.docid !== "") { 
+      docid = event.queryStringParameters.docid; 
+    } 
+  }
+
+  var doctype;
+  if (event.queryStringParameters !== null && event.queryStringParameters !== undefined) { 
+    if (event.queryStringParameters.doctype !== undefined && event.queryStringParameters.doctype !== null && event.queryStringParameters.doctype !== "") { 
+      doctype = event.queryStringParameters.doctype; 
+    } 
+  } 
+
+  if (type === undefined || code === undefined || docid === undefined || doctype === undefined) {
     response(new Error('Required params missing'));
     return;
   }
@@ -70,21 +84,19 @@ module.exports.main = (event, context, callback) => {
 
     var item = {
         id: filename,
-        path: result,
+        path: path,
         added: now.toISOString(),
         type: type,
-        customer: code
+        customer: code,
+        docid: docid,
+        doctype: doctype
     };
-
     var params = {
         TableName: process.env.TEMP_FILES_TABLE,
         Item: item
     };
-    //console.log('Params to DB:' + JSON.stringify(params));
     documentClient.put(params, response);
   }
-
-
 
   //Handle overall output to API GW
   function response(error, result) {
