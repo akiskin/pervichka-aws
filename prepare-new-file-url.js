@@ -5,53 +5,6 @@ var documentClient = new AWS.DynamoDB.DocumentClient();
 
 module.exports.main = (event, context, callback) => {
   
-  var now = new Date();           
-  var filename = uuidv1();
-  var path ='';
-
-  function response(error, result) {
-    const response = {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin" : "*", // Required for CORS support to work
-        "Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
-      },
-      body: JSON.stringify({
-        ok: error ? false : true,
-        path: path, 
-        filename: filename, 
-        result: result, 
-        errorText: error ? error.message : ''})
-    };
-    callback(null, response);
-  }
-
-  function register(error, result) {
-
-    if (error) {
-      callback(error);
-      return;
-    }
-
-    path = result;
-
-    var item = {
-        id: filename,
-        path: result,
-        added: now.toISOString(),
-        type: type,
-        customer: code
-    };
-
-    var params = {
-        TableName: process.env.TEMP_FILES_TABLE,
-        Item: item
-    };
-    //console.log('Params to DB:' + JSON.stringify(params));
-    documentClient.put(params, response);
-
-  }
-
   var type;
   if (event.queryStringParameters !== null && event.queryStringParameters !== undefined) { 
     if (event.queryStringParameters.type !== undefined && event.queryStringParameters.type !== null && event.queryStringParameters.type !== "") { 
@@ -71,14 +24,82 @@ module.exports.main = (event, context, callback) => {
     return;
   }
 
-  var s3 = new AWS.S3();
-  
+  var now = new Date();           
+  var filename = uuidv1();
+  var path ='';
+
+
+  //check CUSTOMER_ID (code) validity
   var params = {
-      Bucket: process.env.TEMP_FILES_BUCKET,
-      Key: filename,
-      Expires: 600
+    TableName : process.env.CUSTOMERS_TABLE,
+    Key: {
+      id: code
+    },
+    AttributesToGet: ['id','active']
   };
 
-  s3.getSignedUrl('putObject', params, register);
+  documentClient.get(params, function(error, data) {
+    if (error) { response(error); return; }
+    
+    console.log(JSON.stringify(data));
+    
+    if (data.Item) { generateUrl(); }
+    else { response(new Error('Customer not found')); }
+        
+  });  
+  
+
+
+  function generateUrl() {
+    var s3 = new AWS.S3();
+    var params = {
+        Bucket: process.env.TEMP_FILES_BUCKET,
+        Key: filename,
+        Expires: 600
+    };
+    s3.getSignedUrl('putObject', params, register);
+  }
+
+
+  //Save generated URL to DB (TEMP_FILES_TABLE)
+  function register(error, result) {
+
+    if (error) { callback(error); return; }
+
+    path = result;
+
+    var item = {
+        id: filename,
+        path: result,
+        added: now.toISOString(),
+        type: type,
+        customer: code
+    };
+
+    var params = {
+        TableName: process.env.TEMP_FILES_TABLE,
+        Item: item
+    };
+    //console.log('Params to DB:' + JSON.stringify(params));
+    documentClient.put(params, response);
+  }
+
+
+
+  //Handle overall output to API GW
+  function response(error, result) {
+    const response = {
+      statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin" : "*", // Required for CORS support to work
+        "Access-Control-Allow-Credentials" : true // Required for cookies, authorization headers with HTTPS
+      },
+      body: JSON.stringify({
+        ok: error ? false : true,
+        path: path, 
+        errorText: error ? error.message : ''})
+    };
+    callback(null, response);
+  }
 
 };
